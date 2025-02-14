@@ -1,7 +1,7 @@
 package uuid
 
 import (
-	"testing"
+    "testing"
 )
 
 func TestGenerate(t *testing.T) {
