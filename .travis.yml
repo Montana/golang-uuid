@@ -1,0 +1,14 @@
+dist: jammy
+language: go
+go:
+  - 1.20
+install:
+  - go mod tidy
+script:
+  - go test -v ./...
+branches:
+  only:
+    - master
+cache:
+  directories:
+    - "$HOME/go/pkg/mod"
