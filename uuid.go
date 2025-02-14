@@ -6,14 +6,46 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 )
+
+var (
+	randPoolEnabled bool
+	randPool     []byte
+	randPoolLock sync.Mutex
+)
+
+func EnableRandPool() {
+	randPoolEnabled = true
+}
+
+func DisableRandPool() {
+	randPoolEnabled = false
+}
+
+func fillRandPool() {
+	randPool = make([]byte, 4096)
+	rand.Read(randPool)
+}
 
 func Generate() (string, error) {
 	bytes := make([]byte, 16)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return "", err
+
+	if randPoolEnabled {
+		randPoolLock.Lock()
+		if len(randPool) < 16 {
+			fillRandPool()
+		}
+		copy(bytes, randPool[:16])
+		randPool = randPool[16:]
+		randPoolLock.Unlock()
+	} else {
+		_, err := rand.Read(bytes)
+		if err != nil {
+			return "", err
+		}
 	}
+
 	bytes[6] = (bytes[6] & 0x0F) | 0x40
 	bytes[8] = (bytes[8] & 0x3F) | 0x80
 	return formatUUID(bytes), nil
