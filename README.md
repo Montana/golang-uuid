@@ -1,3 +1,5 @@
+[![Build Status](https://app.travis-ci.com/Montana/golang-uuid.svg?token=U865GtC2ptqX3Ezf3Fzb&branch=master)](https://app.travis-ci.com/Montana/golang-uuid)
+
 # golang uuid 
 
 ## Overview
