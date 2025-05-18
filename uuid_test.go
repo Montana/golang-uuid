@@ -1,7 +1,6 @@
 package uuid
 
 import (
-	"strings"
 	"testing"
 )
 
