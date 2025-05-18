@@ -9,10 +9,15 @@ import (
 	"sync"
 )
 
+const (
+	uuidLength   = 16
+	randPoolSize = 4096
+)
+
 var (
 	randPoolEnabled bool
-	randPool     []byte
-	randPoolLock sync.Mutex
+	randPool         []byte
+	randPoolLock     sync.Mutex
 )
 
 func EnableRandPool() {
@@ -23,22 +28,30 @@ func DisableRandPool() {
 	randPoolEnabled = false
 }
 
-func fillRandPool() {
-	randPool = make([]byte, 4096)
-	rand.Read(randPool)
+func fillRandPool() error {
+	buf := make([]byte, randPoolSize)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return err
+	}
+	randPool = buf
+	return nil
 }
 
 func Generate() (string, error) {
-	bytes := make([]byte, 16)
+	bytes := make([]byte, uuidLength)
 
 	if randPoolEnabled {
 		randPoolLock.Lock()
-		if len(randPool) < 16 {
-			fillRandPool()
+		defer randPoolLock.Unlock()
+
+		if len(randPool) < uuidLength {
+			if err := fillRandPool(); err != nil {
+				return "", err
+			}
 		}
-		copy(bytes, randPool[:16])
-		randPool = randPool[16:]
-		randPoolLock.Unlock()
+		copy(bytes, randPool[:uuidLength])
+		randPool = randPool[uuidLength:]
 	} else {
 		_, err := rand.Read(bytes)
 		if err != nil {
@@ -48,6 +61,7 @@ func Generate() (string, error) {
 
 	bytes[6] = (bytes[6] & 0x0F) | 0x40
 	bytes[8] = (bytes[8] & 0x3F) | 0x80
+
 	return formatUUID(bytes), nil
 }
 
@@ -57,7 +71,8 @@ func formatUUID(bytes []byte) string {
 		hex.EncodeToString(bytes[4:6]),
 		hex.EncodeToString(bytes[6:8]),
 		hex.EncodeToString(bytes[8:10]),
-		hex.EncodeToString(bytes[10:16]))
+		hex.EncodeToString(bytes[10:16]),
+	)
 }
 
 func Validate(uuid string) error {
@@ -76,7 +91,7 @@ func Validate(uuid string) error {
 func MustGenerate() string {
 	uuid, err := Generate()
 	if err != nil {
-		panic("failed to generate UUID")
+		panic("failed to generate UUID: " + err.Error())
 	}
 	return uuid
 }
